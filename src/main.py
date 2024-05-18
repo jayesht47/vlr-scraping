@@ -1,9 +1,9 @@
 import logging
 import sys
 from typing import List
+import flask
+from flask import Flask
 
-from llama_index.core import Document
-from llama_index.readers.web import UnstructuredURLLoader
 from services.vlr_service import get_latest_news
 
 logging.basicConfig(
@@ -18,4 +18,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-logger.info(get_latest_news())
+
+app = Flask(__name__)
+
+@app.route("/latest-news")
+def latest_news():
+    response = flask.Response()
+    response.set_data(get_latest_news())
+    response.status_code = 200
+    response.headers["Content-Type"] = "application/json"
+    return response

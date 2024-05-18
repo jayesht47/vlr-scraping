@@ -3,7 +3,7 @@ import json
 import requests
 import logging
 
-from beans.news import News,CustomEncoder
+from beans.news import News, CustomEncoder
 
 logger = logging.getLogger()
 
@@ -66,7 +66,5 @@ def get_latest_news() -> str:
                     anchor.select('.news-item-title')[0].text)
                 news.append(News(title, link))
             news_mapping[date_key] = news
-    
-    logger.info(f"news_mapping is {news_mapping}")
 
-    return json.dumps(news_mapping,cls=CustomEncoder)
+    return json.dumps(news_mapping, cls=CustomEncoder)

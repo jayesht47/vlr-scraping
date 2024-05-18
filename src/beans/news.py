@@ -11,4 +11,4 @@ class News():
 class CustomEncoder(JSONEncoder):
     def default(self, obj):
         if (isinstance(obj, News)):
-            return [obj.title, obj.link]
+            return {"title": obj.title, "link": obj.link}
