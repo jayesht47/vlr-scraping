@@ -18,4 +18,4 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-get_latest_news()
+logger.info(get_latest_news())
