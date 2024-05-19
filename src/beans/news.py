@@ -8,7 +8,7 @@ class News():
     link: str
 
 
-class CustomEncoder(JSONEncoder):
+class CustomNewsEncoder(JSONEncoder):
     def default(self, obj):
         if (isinstance(obj, News)):
             return {"title": obj.title, "link": obj.link}
