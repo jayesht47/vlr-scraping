@@ -85,6 +85,7 @@ def get_recent_results() -> str:
 
         preview_container = anchor.select('.h-match-preview')[0]
         match_time: str
+        match_time_ms: str
         match_event: str
         match_series: str
         for index, c in enumerate(preview_container.contents):
@@ -93,12 +94,14 @@ def get_recent_results() -> str:
             if isinstance(c, Tag):
                 if 'h-match-preview-time' in c['class']:
                     match_time = __clean_string(c.text)
+                    match_time_ms = __clean_string(c['data-utc-ts'])
                 if 'h-match-preview-event' in c['class']:
                     match_event = __clean_string(c.text)
                 if 'h-match-preview-series' in c['class']:
                     match_series = __clean_string(c.text)
 
         result.match_time = match_time
+        result.match_time_ms = match_time_ms
         result.match_event = match_event
         result.match_series = match_series
 
