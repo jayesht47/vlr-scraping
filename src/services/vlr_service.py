@@ -40,6 +40,17 @@ def __get_soup_from_html(src: str) -> BeautifulSoup:
     return BeautifulSoup(src, 'html.parser')
 
 
+def __get_todays_links(resp: dict):
+    links = []
+    today = list(resp.keys())[0]
+    for obj in resp[today]:
+        if (isinstance(obj, News)):
+            links.append(obj.link)
+        elif(isinstance(obj, dict)):
+            links.append(obj['link'])
+    return links
+
+
 def get_latest_news(use_cache: Optional[bool] = True) -> str:
     global __cached_latest_news
     is_cached = __cached_latest_news != {}
@@ -155,3 +166,38 @@ def get_recent_results() -> str:
     logger.debug(f'results is {results}')
 
     return json.dumps(results, cls=CustomResultEncoder)
+
+
+def extract_text_from_article(link: str) -> str:
+    try:
+        html = __get_html_from_url(__VLR_URL + link)
+        soup = __get_soup_from_html(html)
+        article_body = soup.select('.article-body')[0]
+        hidden_team_details = article_body.select('.article-ref-card')
+        # removing background text to avoid clutter
+        for e in hidden_team_details:
+            e.decompose()
+        return __clean_string(article_body.text)
+    except:
+        logger.exception("exception occurred in extract_from_article")
+
+
+def get_todays_news(use_cache: Optional[bool] = True) -> list[str]:
+
+    global __cached_latest_news
+    is_cached = __cached_latest_news != {}
+    logger.info(f'get_todays_news called with use_cache : {
+                use_cache} and is_cached {is_cached}')
+    result = []
+    if (use_cache and is_cached):
+        todays_links = __get_todays_links(__cached_latest_news)
+
+        for link in todays_links:
+            result.append(extract_text_from_article(link))
+    else:
+        latest_news = json.loads(get_latest_news())
+        todays_links = __get_todays_links(latest_news)
+        logger.info(f'todays_links is {todays_links}')
+        for link in todays_links:
+            result.append(extract_text_from_article(link))
+    return result
