@@ -1,13 +1,11 @@
 import logging
 import sys
-from typing import List
-import flask
-from flask import Flask
+from flask import Flask, request, Response
 
 from services.vlr_service import (get_latest_news, get_recent_results)
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler("debug.log", mode='w'),
@@ -16,7 +14,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 app = Flask(__name__)
@@ -24,8 +21,12 @@ app = Flask(__name__)
 
 @app.route("/latest-news")
 def latest_news():
-    response = flask.Response()
-    response.set_data(get_latest_news())
+    cache = request.args.get('use_cache')
+    use_cache = True
+    if (cache != None and cache.strip().lower() == "false"):
+        use_cache = False
+    response = Response()
+    response.set_data(get_latest_news(use_cache))
     response.status_code = 200
     response.headers["Content-Type"] = "application/json"
     return response
@@ -33,7 +34,7 @@ def latest_news():
 
 @app.route("/recent-results")
 def recent_results():
-    response = flask.Response()
+    response = Response()
     response.set_data(get_recent_results())
     response.status_code = 200
     response.headers["Content-Type"] = "application/json"

@@ -2,13 +2,18 @@ from bs4 import BeautifulSoup, PageElement, ResultSet, Tag
 import json
 import requests
 import logging
+import datetime
+from typing import Optional
 
 from beans.news import News, CustomNewsEncoder
 from beans.result import Result, CustomResultEncoder
 
 logger = logging.getLogger()
 
-__VLR_URL = 'https://www.vlr.gg/'
+__VLR_URL = 'https://www.vlr.gg'
+
+
+__cached_latest_news = {}
 
 
 def __clean_string(ip: str) -> str:
@@ -35,7 +40,21 @@ def __get_soup_from_html(src: str) -> BeautifulSoup:
     return BeautifulSoup(src, 'html.parser')
 
 
-def get_latest_news() -> str:
+def get_latest_news(use_cache: Optional[bool] = True) -> str:
+    global __cached_latest_news
+    is_cached = __cached_latest_news != {}
+    logger.info(f"get_latest_news called with use_cache : {
+                use_cache} and is_cached : {is_cached}")
+
+    if (use_cache and is_cached):
+        cache_details = {}
+        cache_details["cache"] = "HIT"
+        cache_details["cached_time"] = datetime.datetime.now(
+        ).isoformat(timespec="seconds")
+        __cached_latest_news["cache_details"] = cache_details
+        logger.debug(f"__cached_latest_news is {__cached_latest_news}")
+        return json.dumps(__cached_latest_news, cls=CustomNewsEncoder)
+
     src = __get_html_from_url(__VLR_URL)
     soup = __get_soup_from_html(src)
     home_news = soup.select('.js-home-news')
@@ -56,18 +75,20 @@ def get_latest_news() -> str:
             date_key = cleaned_string.replace(' ', '-')
             if (len(cleaned_string.split(' ')) > 2):
                 date_key = '-'.join(cleaned_string.split(' ')[0:-1])
-            logger.info(f'date_key is {date_key}')
+            logger.debug(f'date_key is {date_key}')
             news_container = news_item.find_next_sibling('div')
             anchors: ResultSet = news_container.find_all('a')
             anchor: Tag
             for anchor in anchors:
-                logger.info(f'anchor.attrs is {anchor.attrs}')
+                logger.debug(f'anchor.attrs is {anchor.attrs}')
                 link = anchor['href']
                 title = __clean_string(
                     anchor.select('.news-item-title')[0].text)
                 news.append(News(title, link))
             news_mapping[date_key] = news
 
+    news_mapping['cache_details'] = {"cache": "MISS"}
+    __cached_latest_news = news_mapping
     return json.dumps(news_mapping, cls=CustomNewsEncoder)
 
 
@@ -88,9 +109,7 @@ def get_recent_results() -> str:
         match_time_ms: str
         match_event: str
         match_series: str
-        for index, c in enumerate(preview_container.contents):
-            logger.info(f'index is {index} __clean_string(c.text) is {
-                        __clean_string(c.text)}')
+        for c in preview_container.contents:
             if isinstance(c, Tag):
                 if 'h-match-preview-time' in c['class']:
                     match_time = __clean_string(c.text)
@@ -108,9 +127,7 @@ def get_recent_results() -> str:
         team_1_container = anchor.select('.h-match-team')[0]
         match_team_1: str
         match_team_1_score: str
-        for index, c in enumerate(team_1_container.contents):
-            logger.info(f'index is {index} __clean_string(c.text) is {
-                        __clean_string(c.text)}')
+        for c in team_1_container.contents:
             if isinstance(c, Tag):
                 if 'h-match-team-name' in c['class']:
                     match_team_1 = __clean_string(c.text)
@@ -123,9 +140,7 @@ def get_recent_results() -> str:
         team_2_container = anchor.select('.h-match-team')[1]
         match_team_2: str
         match_team_2_score: str
-        for index, c in enumerate(team_2_container.contents):
-            logger.info(f'index is {index} __clean_string(c.text) is {
-                        __clean_string(c.text)}')
+        for c in team_2_container.contents:
             if isinstance(c, Tag):
                 if 'h-match-team-name' in c['class']:
                     match_team_2 = __clean_string(c.text)
